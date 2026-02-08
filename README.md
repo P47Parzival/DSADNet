@@ -1,9 +1,5 @@
-# SADNet: Sustained Attention Decoding in a Driving Task by Self-attention Convolutional Neural Network
-Paper has been accepted by "Brain-Apparatus Communication: A Journal of Bacomics"!
-
+Replica of this paper
 DOI: https://doi.org/10.1080/27706710.2024.2400063
-
-If you find this paper valuable, please cite us and feel free to contact us!
 ```
 @article{lai2024sadnet,
   title={SADNet: sustained attention decoding in a driving task by self-attention convolutional neural network},
