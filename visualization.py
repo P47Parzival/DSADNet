@@ -163,7 +163,7 @@ def save_visualization(id, model, subject, x_data, y_data, mode, ll):
 
 if __name__ == '__main__':
     # load data and model
-    model_name = 'DSANet'
+    model_name = 'InceptSADNet'
     subject = 's53'
     data_path = 'data/raw/'
     mode = "cross"

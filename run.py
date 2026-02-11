@@ -33,7 +33,7 @@ def inner_subject_train():
     dataset = 'data'
     # model_name = ['CompactCNN', 'DeepConvNet', 'EEGInception', 'EEGNet', 'EEGResNet', 'InterpretableCNN',
     #               'ShallowConvNet']
-    model_name = ['EEGNet']
+    model_name = ['InceptSADNet']
     all_subjects = get_all_subjects(dataset)
     for index in range(len(model_name)):
         x = import_module('models.' + model_name[index])
@@ -65,8 +65,8 @@ def inner_subject_train():
 
 # cross subject
 def leave_one_subject_out():
-    dataset = 'cross'
-    model_name = ['EEGNet']
+    dataset = 'data'
+    model_name = ['InceptSADNet']
     # 首先得到所有被试的文件名
     all_subjects = get_all_subjects(dataset)
     # 选model
