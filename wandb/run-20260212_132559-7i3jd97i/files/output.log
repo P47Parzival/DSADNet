@@ -1,0 +1,35 @@
+Iteration:   0%|                                                              | 0/62 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "run.py", line 115, in <module>
+    inner_subject_train()
+  File "run.py", line 63, in inner_subject_train
+    train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name[-3:], "inter")
+  File "D:\DSADNet-main\train_test.py", line 165, in train_MAG
+    train_loss = train_epoch(config, model, train_iter, optimizer)
+  File "D:\DSADNet-main\train_test.py", line 39, in train_epoch
+    y_hat = model(X)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\DSADNet-main\models\InceptSADNet.py", line 279, in forward
+    x = self.class_fc(x)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\DSADNet-main\models\InceptSADNet.py", line 258, in forward
+    out = self.fc(x)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\container.py", line 219, in forward
+    input = module(input)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "D:\conda_envs\dsadnet\lib\site-packages\torch\nn\modules\linear.py", line 117, in forward
+    return F.linear(input, self.weight, self.bias)
+RuntimeError: mat1 and mat2 shapes cannot be multiplied (32x2480 and 4280x256)

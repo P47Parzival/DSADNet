@@ -1,0 +1,13 @@
+numpy
+scipy
+torch
+mne
+einops
+wandb
+tqdm
+pandas
+scikit-learn
+imbalanced-learn
+matplotlib
+seaborn
+tensorboard

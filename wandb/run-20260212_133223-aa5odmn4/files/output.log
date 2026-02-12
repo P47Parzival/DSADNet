@@ -1,0 +1,18 @@
+Iteration: 100%|█████████████████████████████████████████████████████| 24/24 [00:01<00:00, 23.37it/s]
+Iteration: 100%|██████████████████████████████████████████████████████| 3/3 [00:00<00:00, 108.18it/s]
+Traceback (most recent call last):
+  File "run.py", line 115, in <module>
+    inner_subject_train()
+  File "run.py", line 63, in inner_subject_train
+    train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name[-3:], "inter")
+  File "D:\DSADNet-main\train_test.py", line 167, in train_MAG
+    test_acc, test_mae, test_corr, test_f1, test_auc = test_model(config, model, test_iter)
+  File "D:\DSADNet-main\train_test.py", line 119, in test_model
+    auc = roc_auc_score(y_test, F.softmax(torch.Tensor(y_hat), dim=1).numpy(), multi_class='ovr', average='weighted')
+  File "D:\conda_envs\dsadnet\lib\site-packages\sklearn\utils\_param_validation.py", line 214, in wrapper
+    return func(*args, **kwargs)
+  File "D:\conda_envs\dsadnet\lib\site-packages\sklearn\metrics\_ranking.py", line 621, in roc_auc_score
+    return _multiclass_roc_auc_score(
+  File "D:\conda_envs\dsadnet\lib\site-packages\sklearn\metrics\_ranking.py", line 738, in _multiclass_roc_auc_score
+    raise ValueError(
+ValueError: Number of classes in y_true not equal to the number of columns in 'y_score'
