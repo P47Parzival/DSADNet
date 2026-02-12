@@ -1,0 +1,12 @@
+{"time":"2026-02-12T13:28:24.9345172+05:30","level":"INFO","msg":"stream: starting","core version":"0.24.2"}
+{"time":"2026-02-12T13:28:25.4035273+05:30","level":"INFO","msg":"stream: created new stream","id":"ayno2ksc"}
+{"time":"2026-02-12T13:28:25.4035273+05:30","level":"INFO","msg":"handler: started","stream_id":"ayno2ksc"}
+{"time":"2026-02-12T13:28:25.4061682+05:30","level":"INFO","msg":"stream: started","id":"ayno2ksc"}
+{"time":"2026-02-12T13:28:25.4061682+05:30","level":"INFO","msg":"sender: started","stream_id":"ayno2ksc"}
+{"time":"2026-02-12T13:28:25.4061682+05:30","level":"INFO","msg":"writer: started","stream_id":"ayno2ksc"}
+{"time":"2026-02-12T13:32:21.4263635+05:30","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2026-02-12T13:32:22.1317947+05:30","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2026-02-12T13:32:22.1427205+05:30","level":"INFO","msg":"stream: closing","id":"ayno2ksc"}
+{"time":"2026-02-12T13:32:22.1427205+05:30","level":"INFO","msg":"handler: closed","stream_id":"ayno2ksc"}
+{"time":"2026-02-12T13:32:22.1432271+05:30","level":"INFO","msg":"sender: closed","stream_id":"ayno2ksc"}
+{"time":"2026-02-12T13:32:22.1432271+05:30","level":"INFO","msg":"stream: closed","id":"ayno2ksc"}

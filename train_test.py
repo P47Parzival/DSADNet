@@ -116,7 +116,10 @@ def test_model(config, model, test_iter, use_zero=False):
     acc = accuracy_score(y_test, preds)
     # multi-class auc-roc calculation
     # 这里y_hat经过softmax的概率化后使得其加和为1
-    auc = roc_auc_score(y_test, F.softmax(torch.Tensor(y_hat), dim=1).numpy(), multi_class='ovr', average='weighted')
+    try:
+        auc = roc_auc_score(y_test, F.softmax(torch.Tensor(y_hat), dim=1).numpy(), multi_class='ovr', average='weighted', labels=list(range(config.num_classes)))
+    except ValueError:
+        auc = 0.5  # Default to 0.5 if AUC cannot be calculated (e.g. only one class in y_test)
 
     # multi-label的AUC-ROC曲线需要二值化
     # auc = roc_auc_score(y_test, preds)
@@ -150,7 +153,7 @@ def test_model(config, model, test_iter, use_zero=False):
 
 # reference MAG
 def train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name, mode="inter"):
-    run = wandb.init(project="DSANet", entity="laishuzhong", config=config.__dict__, reinit=True)
+    run = wandb.init(project="DSADNet", entity=None, config=config.__dict__, reinit=True)
     wandb.config.update(config.__dict__, allow_val_change=True)  # 记录config中设置的参数
     valid_losses = []
     test_f1s = []

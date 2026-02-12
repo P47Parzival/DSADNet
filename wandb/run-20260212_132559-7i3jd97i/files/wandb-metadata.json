@@ -1,0 +1,43 @@
+{
+  "os": "Windows-10-10.0.26200-SP0",
+  "python": "CPython 3.8.20",
+  "startedAt": "2026-02-12T07:55:59.572301Z",
+  "args": [
+    "--model",
+    "InceptSADNet"
+  ],
+  "program": "run.py",
+  "codePath": "run.py",
+  "codePathLocal": "run.py",
+  "git": {
+    "remote": "https://github.com/P47Parzival/DSADNet.git"
+  },
+  "email": "dhruvmali999@gmail.com",
+  "root": "D:\\DSADNet-main",
+  "host": "GPUSystem",
+  "executable": "D:\\conda_envs\\dsadnet\\python.exe",
+  "cpu_count": 8,
+  "cpu_count_logical": 16,
+  "gpu": "Quadro GV100",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "1024192409600",
+      "used": "735208284160"
+    }
+  },
+  "memory": {
+    "total": "34027896832"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "Quadro GV100",
+      "memoryTotal": "34359738368",
+      "cudaCores": 5120,
+      "architecture": "Volta",
+      "uuid": "GPU-8e6b8a32-d45d-43f8-0057-1710f938ff10"
+    }
+  ],
+  "cudaVersion": "13.0",
+  "writerId": "v5g03hfhr339shbg1jtnfjwancsj2nu2"
+}

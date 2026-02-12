@@ -99,7 +99,18 @@ if __name__ == '__main__':
     # ignore the warning
     warnings.filterwarnings('ignore')
     # offline
-    os.environ["WANDB_API_KEY"] = '5f0253465a590ba45b8cd6f7115b70704b12deb2'
-    os.environ['WANDB_MODE'] = 'offline'
+    # API Key handling
+    api_key = os.environ.get("WANDB_API_KEY")
+    if not api_key:
+        print("WandB API Key not found in environment variables.")
+        api_key = input("Please enter your WandB API Key (or press Enter to skip/use offline mode): ").strip()
+        if api_key:
+            os.environ["WANDB_API_KEY"] = api_key
+    
+    if not os.environ.get("WANDB_API_KEY"):
+        print("No API Key provided. Running in offline mode.")
+        os.environ['WANDB_MODE'] = 'offline'
+    else:
+        os.environ['WANDB_MODE'] = 'online'
     inner_subject_train()
     # leave_one_subject_out()

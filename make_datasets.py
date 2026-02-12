@@ -24,8 +24,8 @@ freq = 500
 
 # convert .set to Epochs
 def convert_raw2epoch(file_name, tmin, tmax, event_id):
-    raw = mne.io.read_raw_eeglab(file_name, preload=False)
-    raw.resample()
+    raw = mne.io.read_raw_eeglab(file_name, preload=True)
+    raw.resample(freq)
     events_from_annot, event_dict = mne.events_from_annotations(raw)
     epochs = mne.Epochs(raw, events_from_annot, event_id=event_id, tmin=tmin, tmax=tmax, preload=True)
     return epochs
@@ -205,8 +205,8 @@ def clf_labels_for_all_subjects(file_path, tmin, tmax, event_id, incremental, pe
         X, y = clf_labels_for_subjects(subject_path, tmin, tmax, event_id, incremental)
         print(X.shape)
         print(y.shape)
-        np.save(subject_path + '_x', X)
-        np.save(subject_path + '_y', y)
+        np.save(subject_path + '/' + subject + '_x', X)
+        np.save(subject_path + '/' + subject + '_y', y)
         print("save " + str(subject) + " finished.")
 
 
@@ -352,6 +352,6 @@ def get_single_subject(subject_name):
 
 
 if __name__ == '__main__':
-    # incremental = start * freq
-    # clf_labels_for_all_subjects(file_path, tmin, tmax, event_id, incremental, percentile=0.05)
-    make_cross_datasets()
+    incremental = start * freq
+    clf_labels_for_all_subjects(file_path, tmin, tmax, event_id, incremental, percentile=0.05)
+    # make_cross_datasets()

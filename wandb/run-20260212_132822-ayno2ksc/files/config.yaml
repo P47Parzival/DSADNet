@@ -1,0 +1,89 @@
+_wandb:
+    value:
+        cli_version: 0.24.2
+        e:
+            jw8f8a6t1ig5t8mqpfnvepibgxp2hkpl:
+                args:
+                    - --model
+                    - InceptSADNet
+                codePath: run.py
+                codePathLocal: run.py
+                cpu_count: 8
+                cpu_count_logical: 16
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "1024192409600"
+                        used: "735208316928"
+                email: dhruvmali999@gmail.com
+                executable: D:\conda_envs\dsadnet\python.exe
+                git:
+                    remote: https://github.com/P47Parzival/DSADNet.git
+                gpu: Quadro GV100
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Volta
+                      cudaCores: 5120
+                      memoryTotal: "34359738368"
+                      name: Quadro GV100
+                      uuid: GPU-8e6b8a32-d45d-43f8-0057-1710f938ff10
+                host: GPUSystem
+                memory:
+                    total: "34027896832"
+                os: Windows-10-10.0.26200-SP0
+                program: run.py
+                python: CPython 3.8.20
+                root: D:\DSADNet-main
+                startedAt: "2026-02-12T07:58:22.648227Z"
+                writerId: jw8f8a6t1ig5t8mqpfnvepibgxp2hkpl
+        m: []
+        python_version: 3.8.20
+        t:
+            "1":
+                - 1
+                - 5
+                - 53
+            "2":
+                - 1
+                - 5
+                - 53
+            "3":
+                - 2
+                - 16
+            "4": 3.8.20
+            "5": 0.24.2
+            "8":
+                - 3
+            "10":
+                - 20
+            "12": 0.24.2
+            "13": windows-amd64
+auc_save_path:
+    value: data/saved_dict/
+batch_size:
+    value: 32
+class_list:
+    value:
+        - alert
+        - drowsy
+        - other
+data_path:
+    value: data/raw/s01
+device:
+    value: cuda
+dropout:
+    value: 0.5
+f1_save_path:
+    value: data/saved_dict/
+learning_rate:
+    value: 0.001
+log_path:
+    value: data/log/InceptSADNet
+model_name:
+    value: InceptSADNet
+num_classes:
+    value: 3
+num_epoch:
+    value: 100
+require_improvement:
+    value: 1000
