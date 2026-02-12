@@ -352,6 +352,6 @@ def get_single_subject(subject_name):
 
 
 if __name__ == '__main__':
-    incremental = start * freq
-    clf_labels_for_all_subjects(file_path, tmin, tmax, event_id, incremental, percentile=0.05)
-    # make_cross_datasets()
+    # incremental = start * freq
+    # clf_labels_for_all_subjects(file_path, tmin, tmax, event_id, incremental, percentile=0.05)
+    make_cross_datasets()
