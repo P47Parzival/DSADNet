@@ -57,20 +57,10 @@ def split_data(X, y):
     x2_dev, x2_test, y2_dev, y2_test = train_test_split(x2_test, y2_test, test_size=0.5, random_state=27)
 
     # concatenate
-<<<<<<< HEAD
-    train_data = x0_train.append(x1_train)
-    dev_data = x0_dev.append(x1_dev)
-    test_data = x0_test.append(x1_test)
-
-    train_data = train_data.append(x2_train)
-    dev_data = dev_data.append(x2_dev)
-    test_data = test_data.append(x2_test)
-=======
     # concatenate
     train_data = pd.concat([x0_train, x1_train, x2_train], ignore_index=True)
     dev_data = pd.concat([x0_dev, x1_dev, x2_dev], ignore_index=True)
     test_data = pd.concat([x0_test, x1_test, x2_test], ignore_index=True)
->>>>>>> cb54f876f37ec6a1a2f0113f00af16f1041284b6
 
     train_data = train_data.astype(np.float32)
     dev_data = dev_data.astype(np.float32)

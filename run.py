@@ -15,7 +15,7 @@ parser.add_argument('--model', type=str, default='CompactCNN')
 # two mode：inner, outer
 # for one subject to split the train and test dataset
 # leave-one-subject-out
-parser.add_argument('--mode', type=bool, default=False)
+parser.add_argument('--mode', type=str, default='False')
 args = parser.parse_args()
 
 
@@ -65,10 +65,10 @@ def inner_subject_train():
 
 # cross subject
 def leave_one_subject_out():
-    dataset = 'cross'  # Uses cross-subject preprocessed data
+    dataset = 'data'
     model_name = ['InceptSADNet']
-    # 首先得到所有被试的文件名  
-    all_subjects = get_all_subjects('data')  # Still get subjects from data/raw
+    # 首先得到所有被试的文件名
+    all_subjects = get_all_subjects(dataset)
     # 选model
     for index in range(len(model_name)):
         data_list = all_subjects
@@ -79,8 +79,9 @@ def leave_one_subject_out():
 
         # 选一个数据集作为测试集，其余的混合后作为训练集和验证集
         for subject_name in data_list:
-            print('loading cross-subject data...')
-            config.data_path = 'data/cross'  # Use cross-subject data path
+            print('loading data...')
+            # config.data_path = dataset + '/raw/' + subject_name  # data/raw/sxx
+            config.data_path = subject_name
             print(config.data_path)
             train_iter, test_iter, dev_iter = build_cross_datasets(config, subject_name[-3:])
             time_dif = get_time_dif(start_time)
@@ -111,11 +112,7 @@ if __name__ == '__main__':
         os.environ['WANDB_MODE'] = 'offline'
     else:
         os.environ['WANDB_MODE'] = 'online'
-    
-    # Use the mode parameter to decide which training to run
-    if args.mode:
-        print("Running Cross-Subject Training (Leave-One-Subject-Out)")
+    if args.mode == 'True':
         leave_one_subject_out()
     else:
-        print("Running Inter-Subject Training (Within-Subject)")
         inner_subject_train()

@@ -259,6 +259,8 @@ def clf_labels_for_subjects(file_path, tmin, tmax, event_id, incremental, percen
 
 def make_cross_datasets():
     data_path = 'data'
+    if not os.path.exists('data/cross'):
+        os.makedirs('data/cross')
     all_subjects_path = get_all_subjects(data_path)
     # 每个被试都需要作为训练集一次
     for subject_name in all_subjects_path:
@@ -301,22 +303,29 @@ def get_cross_subject(subject_name, all_subjects):
         if name[-3:] == subject_name:
             print("{} is used for test".format(name[-3:]))
         else:
+            # Force float32 to save memory
             all_zero, all_one, all_two = get_single_subject(name)
 
             train_0_data, dev_0_data = split_data(all_zero)
             train_1_data, dev_1_data = split_data(all_one)
             train_2_data, dev_2_data = split_data(all_two)
 
-            train_zeros = flatten(train_0_data, train_zeros)
-            train_ones = flatten(train_1_data, train_ones)
-            train_twos = flatten(train_2_data, train_twos)
+            # Extend lists instead of custom flatten function
+            train_zeros.extend(train_0_data)
+            train_ones.extend(train_1_data)
+            train_twos.extend(train_2_data)
 
-            dev_zeros = flatten(dev_0_data, dev_zeros)
-            dev_ones = flatten(dev_1_data, dev_ones)
-            dev_twos = flatten(dev_2_data, dev_twos)
+            dev_zeros.extend(dev_0_data)
+            dev_ones.extend(dev_1_data)
+            dev_twos.extend(dev_2_data)
 
-    return np.array(train_zeros), np.array(train_ones), np.array(train_twos), np.array(dev_zeros), np.array(
-        dev_ones), np.array(dev_twos)
+    # Convert to float32 numpy arrays
+    return (np.array(train_zeros, dtype=np.float32), 
+            np.array(train_ones, dtype=np.float32), 
+            np.array(train_twos, dtype=np.float32), 
+            np.array(dev_zeros, dtype=np.float32),
+            np.array(dev_ones, dtype=np.float32), 
+            np.array(dev_twos, dtype=np.float32))
 
 
 def flatten(data, data_list):
@@ -347,8 +356,10 @@ def get_single_subject(subject_name):
             all_one.append(X[i])
         else:
             all_two.append(X[i])
-    # 这里对得到的数据进行一次shuffle
-    return np.random.permutation(all_zero), np.random.permutation(all_one), np.random.permutation(all_two)
+    # Convert to float32 to save memory
+    return (np.random.permutation(all_zero).astype(np.float32), 
+            np.random.permutation(all_one).astype(np.float32), 
+            np.random.permutation(all_two).astype(np.float32))
 
 
 if __name__ == '__main__':
