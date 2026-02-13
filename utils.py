@@ -90,18 +90,18 @@ def build_cross_datasets(config, subject_name):
     shuffle = True
     drop_last = True
 
-    train_x = np.load(config.data_path+'/train_'+subject_name+'_x.npy')
-    train_y = np.load(config.data_path+'/train_'+subject_name+'_y.npy')
+    train_x = np.load('data/cross/train_'+subject_name+'_x.npy')
+    train_y = np.load('data/cross/train_'+subject_name+'_y.npy')
 
-    dev_x = np.load(config.data_path+'/dev_'+subject_name+'_x.npy')
-    dev_y = np.load(config.data_path+'/dev_'+subject_name+'_y.npy')
+    dev_x = np.load('data/cross/dev_'+subject_name+'_x.npy')
+    dev_y = np.load('data/cross/dev_'+subject_name+'_y.npy')
 
-    test_x = np.load(config.data_path+'/test_'+subject_name+'_x.npy')
-    test_y = np.load(config.data_path+'/test_'+subject_name+'_y.npy')
+    test_x = np.load('data/cross/test_'+subject_name+'_x.npy')
+    test_y = np.load('data/cross/test_'+subject_name+'_y.npy')
 
-    train_dataset = torch.utils.data.TensorDataset(torch.from_numpy(train_x), torch.from_numpy(train_y))
-    dev_dataset = torch.utils.data.TensorDataset(torch.from_numpy(dev_x), torch.from_numpy(dev_y))
-    test_dataset = torch.utils.data.TensorDataset(torch.from_numpy(test_x), torch.from_numpy(test_y))
+    train_dataset = torch.utils.data.TensorDataset(torch.from_numpy(train_x.astype(np.float32)), torch.from_numpy(train_y.astype(np.int64)))
+    dev_dataset = torch.utils.data.TensorDataset(torch.from_numpy(dev_x.astype(np.float32)), torch.from_numpy(dev_y.astype(np.int64)))
+    test_dataset = torch.utils.data.TensorDataset(torch.from_numpy(test_x.astype(np.float32)), torch.from_numpy(test_y.astype(np.int64)))
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)
     dev_loader = torch.utils.data.DataLoader(dev_dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)

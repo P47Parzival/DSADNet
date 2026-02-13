@@ -21,12 +21,16 @@ args = parser.parse_args()
 
 # get all subjects path
 def get_all_subjects(dataset):
+    # Filter to only use the 16 subjects from the SADNet paper
+    valid_subjects = ['s01', 's05', 's09', 's13', 's22', 's31', 's35', 's40', 
+                      's41', 's42', 's43', 's44', 's45', 's49', 's50', 's53']
     data_list = os.listdir(dataset + '/raw')
     all_subjects = []
     for subject_name in data_list:
-        data_path = dataset + '/raw/' + subject_name  # data/raw/sxx
-        all_subjects.append(data_path)
-    return all_subjects
+        if subject_name.lower() in valid_subjects:
+            data_path = dataset + '/raw/' + subject_name  # data/raw/sxx
+            all_subjects.append(data_path)
+    return sorted(all_subjects)
 
 # inner subject
 def inner_subject_train():

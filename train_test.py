@@ -162,8 +162,12 @@ def train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name, mode
     best_auc = 0
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     # to get single model for certain subject
-    config.f1_save_path += config.model_name + '/f1_' + subject_name + '_' + mode + '.ckpt'
-    config.auc_save_path += config.model_name + '/auc_' + subject_name + '_' + mode + '.ckpt'
+    import os
+    save_dir = os.path.join(config.f1_save_path, config.model_name)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    config.f1_save_path = os.path.join(save_dir, f'f1_{subject_name}_{mode}.ckpt')
+    config.auc_save_path = os.path.join(save_dir, f'auc_{subject_name}_{mode}.ckpt')
     for i in range(int(config.num_epoch)):
         train_loss = train_epoch(config, model, train_iter, optimizer)
         valid_loss = eval_epoch(config, model, dev_iter)
