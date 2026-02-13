@@ -21,8 +21,13 @@ def evaluate_all_subjects():
     
     # Get all subjects from your dataset
     dataset = 'data'
-    all_subjects = get_all_subjects(dataset)
+    all_subjects_full = get_all_subjects(dataset)
     model_name = 'InceptSADNet'
+    
+    # Filter to use only specified subjects
+    selected_subjects = ['s01', 's05', 's09', 's13', 's22', 's31', 's35', 's40', 
+                         's41', 's42', 's43', 's44', 's45', 's49', 's50', 's53']
+    all_subjects = [s for s in all_subjects_full if os.path.basename(s) in selected_subjects]
     
     print(f"Found {len(all_subjects)} subjects to evaluate")
     print(f"Subjects: {[os.path.basename(s) for s in all_subjects[:5]]}{'...' if len(all_subjects) > 5 else ''}")

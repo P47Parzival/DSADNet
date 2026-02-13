@@ -35,113 +35,99 @@ class Config(object):
         self.batch_size = 32
         self.dropout = 0.5
 
-class ChannelAttention(nn.Module):
-    def __init__(self, in_planes, ratio=16):
-        super(ChannelAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.max_pool = nn.AdaptiveMaxPool2d(1)
-        self.fc1   = nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False)
-        self.relu1 = nn.ReLU()
-        self.fc2   = nn.Conv2d(in_planes // ratio, in_planes, 1, bias=False)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        avg_out = self.fc2(self.relu1(self.fc1(self.avg_pool(x))))
-        max_out = self.fc2(self.relu1(self.fc1(self.max_pool(x))))
-        out = avg_out + max_out
-        return self.sigmoid(out)
-
-class SpatialAttention(nn.Module):
-    def __init__(self, kernel_size=7):
-        super(SpatialAttention, self).__init__()
-        self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size//2, bias=False)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        avg_out = torch.mean(x, dim=1, keepdim=True)
-        max_out, _ = torch.max(x, dim=1, keepdim=True)
-        x = torch.cat([avg_out, max_out], dim=1)
-        x = self.conv1(x)
-        return self.sigmoid(x)
-
-class CBAMBlock(nn.Module):
+class SEBlock(nn.Module):
     """
-    Convolutional Block Attention Module.
-    Applies Channel Attention (which frequencies matter) 
-    followed by Spatial Attention (which electrodes matter).
+    Squeeze-and-Excitation block to recalibrate channel weights.
+    Explicitly suppresses noisy channels (like those with loose contacts).
     """
     def __init__(self, channels, reduction=16):
-        super(CBAMBlock, self).__init__()
-        self.ca = ChannelAttention(channels, ratio=reduction)
-        self.sa = SpatialAttention()
+        super(SEBlock, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channels, channels // reduction, bias=False),
+            nn.ReLU(),
+            nn.Linear(channels // reduction, channels, bias=False),
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
-        x = x * self.ca(x)
-        x = x * self.sa(x)
-        return x
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y
 
 class ConvEmbedding(nn.Module):
     """
-    Multi-Scale Temporal-Spatial extraction updated with 
-    InstanceNorm, Spatial Dropout, and CBAM for Cross-Subject Robustness.
+    Replaces the original sequential blocks with Incept-SADNet's 
+    Multi-Scale Temporal-Spatial extraction.
     """
     def __init__(self, embed_size):
         super(ConvEmbedding, self).__init__()
         
-        self.F1 = 8          
-        self.D = 2           
-        self.kernel_lengths = [15, 31, 63] 
+        # Hyperparameters
+        self.F1 = 8          # Filters per branch
+        self.D = 2           # Spatial depth multiplier
+        self.kernel_lengths = [15, 31, 63] # Short, Medium, Long scales
         self.in_channels = 30 
         
-        # 1. Multi-Scale Temporal Extraction
+        # 1. Multi-Scale Temporal Extraction (Parallel Branches)
         self.branches = nn.ModuleList()
         for k in self.kernel_lengths:
             self.branches.append(nn.Sequential(
+                # Padding ensures time dimension stays consistent
                 nn.Conv2d(1, self.F1, (1, k), padding=(0, k//2), bias=False),
-                nn.InstanceNorm2d(self.F1, affine=True), # Changed to InstanceNorm
+                nn.BatchNorm2d(self.F1),
                 nn.ELU()
             ))
         
         # 2. Grouped Spatial Filtering
+        # Input depth = F1 * 3 branches. Output = Input * D
         total_filters = self.F1 * len(self.kernel_lengths)
         self.spatial_conv = nn.Sequential(
             nn.Conv2d(
                 total_filters, 
                 total_filters * self.D, 
                 (self.in_channels, 1), 
-                groups=total_filters, 
+                groups=total_filters, # Depthwise convolution
                 bias=False
             ),
-            nn.InstanceNorm2d(total_filters * self.D, affine=True), # Changed to InstanceNorm
+            nn.BatchNorm2d(total_filters * self.D),
             nn.ELU(),
-            nn.AvgPool2d((1, 4)), 
-            nn.Dropout2d(0.5) # Changed to Spatial Dropout2d
+            nn.AvgPool2d((1, 4)), # Downsample time
+            nn.Dropout(0.5)
         )
 
-        # 3. CBAM Attention Block (Replaces SEBlock)
-        self.cbam_block = CBAMBlock(channels=total_filters * self.D)
+        # 3. Squeeze-and-Excitation (Recalibration)
+        # (Make sure to include the SEBlock class defined previously)
+        self.se_block = SEBlock(channels=total_filters * self.D)
         
         # 4. Final Projection
+        # Projects features to the 'embed_size' expected by the Transformer
         self.projection = nn.Sequential(
             nn.Conv2d(total_filters * self.D, embed_size, (1, 1), bias=False),
-            nn.InstanceNorm2d(embed_size, affine=True), # Changed to InstanceNorm
+            nn.BatchNorm2d(embed_size),
             nn.ELU(),
             nn.AvgPool2d((1, 4)), 
-            nn.Dropout2d(0.5), # Changed to Spatial Dropout2d
-            Rearrange('b e (h) (w) -> b (h w) e'), 
+            nn.Dropout(0.5),
+            Rearrange('b e (h) (w) -> b (h w) e'), # Reshape for Transformer
         )
 
     def forward(self, x):
+        # Ensure input has 4 dimensions: [Batch, 1, Channels, Time]
         if x.ndim == 3:
             x = x.unsqueeze(1)
             
+        # Branch processing
         branches_out = [branch(x) for branch in self.branches]
-        x = torch.cat(branches_out, dim=1) 
+        x = torch.cat(branches_out, dim=1) # Concatenate filters
         
+        # Spatial & SE
         x = self.spatial_conv(x)
-        x = self.cbam_block(x) # Apply CBAM
+        x = self.se_block(x)
         
+        # Final projection
         out = self.projection(x)
+        
         return out
                 
 class PatchEmbedding(nn.Sequential):
@@ -252,23 +238,22 @@ class TransformerEncoder(nn.Sequential):
 class ClassificationHead(nn.Sequential):
     def __init__(self, embed_size, n_classes):
         super(ClassificationHead, self).__init__()
-        
-        # The flattened size from the Transformer (62 sequence length * 40 embed_size)
-        flattened_size = 2480 
-        
+        self.clshead = nn.Sequential(
+            Reduce('b n e -> b e', reduction='mean'),
+            nn.LayerNorm(embed_size),
+            nn.Linear(embed_size, n_classes),
+        )
         self.fc = nn.Sequential(
-            nn.LayerNorm(flattened_size), # Added to normalize the massive flattened vector
-            nn.Linear(flattened_size, 128), # Tighter bottleneck (was 256)
+            nn.Linear(2480, 256),
             nn.ELU(),
-            nn.Dropout(0.6), # Increased dropout to heavily punish memorization
-            nn.Linear(128, 32),
+            nn.Dropout(0.5),
+            nn.Linear(256, 32),
             nn.ELU(),
-            nn.Dropout(0.4),
+            nn.Dropout(0.3),
             nn.Linear(32, n_classes)
         )
 
     def forward(self, x):
-        # Flattens the [Batch, Seq_len, Embed_Size] to [Batch, 2480]
         x = x.contiguous().view(x.shape[0], -1)
         out = self.fc(x)
         return out
