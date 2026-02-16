@@ -1,6 +1,7 @@
 # coding: UTF-8
 import time
 import argparse
+import torch
 from importlib import import_module
 
 from train_test import train_MAG
@@ -16,7 +17,14 @@ parser.add_argument('--model', type=str, default='CompactCNN')
 # for one subject to split the train and test dataset
 # leave-one-subject-out
 parser.add_argument('--mode', type=str, default='False')
+parser.add_argument('--compile', action='store_true', help='Enable torch.compile for potential speedup (PyTorch 2.0+)')
 args = parser.parse_args()
+
+# Enable cuDNN benchmark for faster performance on fixed input sizes
+if torch.cuda.is_available():
+    torch.backends.cudnn.benchmark = True
+    # Enable TF32 for Ampere+ GPUs (RTX 30xx/40xx) - ~2x matmul speedup with no code changes
+    torch.set_float32_matmul_precision('high')
 
 
 # get all subjects path
@@ -62,6 +70,14 @@ def inner_subject_train():
 
             # train and test
             model = x.Model(config).to(config.device)
+            
+            if args.compile and hasattr(torch, 'compile'):
+                print("Compiling model...")
+                try:
+                    model = torch.compile(model)
+                except Exception as e:
+                    print(f"torch.compile failed, falling back to eager mode: {e}")
+            
             print(model.parameters)
             # train(config, model, train_iter, dev_iter, test_iter)
             train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name[-3:], "inter")
@@ -93,6 +109,14 @@ def leave_one_subject_out():
 
             # train and test
             model = x.Model(config).to(config.device)
+            
+            if args.compile and hasattr(torch, 'compile'):
+                print("Compiling model...")
+                try:
+                    model = torch.compile(model)
+                except Exception as e:
+                    print(f"torch.compile failed, falling back to eager mode: {e}")
+            
             print(model.parameters)
             # train(config, model, train_iter, dev_iter, test_iter)
             train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name[-3:], "cross")

@@ -32,58 +32,79 @@ class Config(object):
         self.learning_rate = 1e-3
         self.num_epoch = 100
         self.require_improvement = 1000
-        self.batch_size = 32
+        self.batch_size = 64  # Increased from 32 for better GPU utilization
         self.dropout = 0.5
 
-class ChannelAttention(nn.Module):
-    def __init__(self, in_planes, ratio=16):
-        super(ChannelAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.max_pool = nn.AdaptiveMaxPool2d(1)
-        self.fc1   = nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False)
-        self.relu1 = nn.ReLU()
-        self.fc2   = nn.Conv2d(in_planes // ratio, in_planes, 1, bias=False)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        avg_out = self.fc2(self.relu1(self.fc1(self.avg_pool(x))))
-        max_out = self.fc2(self.relu1(self.fc1(self.max_pool(x))))
-        out = avg_out + max_out
-        return self.sigmoid(out)
-
-class SpatialAttention(nn.Module):
-    def __init__(self, kernel_size=7):
-        super(SpatialAttention, self).__init__()
-        self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size//2, bias=False)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        avg_out = torch.mean(x, dim=1, keepdim=True)
-        max_out, _ = torch.max(x, dim=1, keepdim=True)
-        x = torch.cat([avg_out, max_out], dim=1)
-        x = self.conv1(x)
-        return self.sigmoid(x)
-
-class CBAMBlock(nn.Module):
+class SEBlock(nn.Module):
     """
-    Convolutional Block Attention Module.
-    Applies Channel Attention (which frequencies matter) 
-    followed by Spatial Attention (which electrodes matter).
+    Squeeze-and-Excitation block to recalibrate channel weights.
+    Explicitly suppresses noisy channels.
     """
     def __init__(self, channels, reduction=16):
-        super(CBAMBlock, self).__init__()
-        self.ca = ChannelAttention(channels, ratio=reduction)
-        self.sa = SpatialAttention()
+        super(SEBlock, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channels, channels // reduction, bias=False),
+            nn.ReLU(),
+            nn.Linear(channels // reduction, channels, bias=False),
+            nn.Sigmoid()
+        )
 
     def forward(self, x):
-        x = x * self.ca(x)
-        x = x * self.sa(x)
-        return x
+        b, c, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1)
+        return x * y
+
+# class ChannelAttention(nn.Module):
+#     def __init__(self, in_planes, ratio=16):
+#         super(ChannelAttention, self).__init__()
+#         self.avg_pool = nn.AdaptiveAvgPool2d(1)
+#         self.max_pool = nn.AdaptiveMaxPool2d(1)
+#         self.fc1   = nn.Conv2d(in_planes, in_planes // ratio, 1, bias=False)
+#         self.relu1 = nn.ReLU()
+#         self.fc2   = nn.Conv2d(in_planes // ratio, in_planes, 1, bias=False)
+#         self.sigmoid = nn.Sigmoid()
+
+#     def forward(self, x):
+#         avg_out = self.fc2(self.relu1(self.fc1(self.avg_pool(x))))
+#         max_out = self.fc2(self.relu1(self.fc1(self.max_pool(x))))
+#         out = avg_out + max_out
+#         return self.sigmoid(out)
+
+# class SpatialAttention(nn.Module):
+#     def __init__(self, kernel_size=7):
+#         super(SpatialAttention, self).__init__()
+#         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size//2, bias=False)
+#         self.sigmoid = nn.Sigmoid()
+
+#     def forward(self, x):
+#         avg_out = torch.mean(x, dim=1, keepdim=True)
+#         max_out, _ = torch.max(x, dim=1, keepdim=True)
+#         x = torch.cat([avg_out, max_out], dim=1)
+#         x = self.conv1(x)
+#         return self.sigmoid(x)
+
+# class CBAMBlock(nn.Module):
+    # """
+    # Convolutional Block Attention Module.
+    # Applies Channel Attention (which frequencies matter) 
+    # followed by Spatial Attention (which electrodes matter).
+    # """
+    # def __init__(self, channels, reduction=16):
+    #     super(CBAMBlock, self).__init__()
+    #     self.ca = ChannelAttention(channels, ratio=reduction)
+    #     self.sa = SpatialAttention()
+
+    # def forward(self, x):
+    #     x = x * self.ca(x)
+    #     x = x * self.sa(x)
+    #     return x
 
 class ConvEmbedding(nn.Module):
     """
-    Multi-Scale Temporal-Spatial extraction updated with 
-    InstanceNorm, Spatial Dropout, and CBAM for Cross-Subject Robustness.
+    Multi-Scale Temporal-Spatial extraction.
+    Reverted to BatchNorm and SEBlock for Cross-Subject Stability.
     """
     def __init__(self, embed_size):
         super(ConvEmbedding, self).__init__()
@@ -98,7 +119,7 @@ class ConvEmbedding(nn.Module):
         for k in self.kernel_lengths:
             self.branches.append(nn.Sequential(
                 nn.Conv2d(1, self.F1, (1, k), padding=(0, k//2), bias=False),
-                nn.InstanceNorm2d(self.F1, affine=True), # Changed to InstanceNorm
+                nn.BatchNorm2d(self.F1), # Reverted to BatchNorm2d
                 nn.ELU()
             ))
         
@@ -112,22 +133,22 @@ class ConvEmbedding(nn.Module):
                 groups=total_filters, 
                 bias=False
             ),
-            nn.InstanceNorm2d(total_filters * self.D, affine=True), # Changed to InstanceNorm
+            nn.BatchNorm2d(total_filters * self.D), # Reverted to BatchNorm2d
             nn.ELU(),
             nn.AvgPool2d((1, 4)), 
-            nn.Dropout2d(0.5) # Changed to Spatial Dropout2d
+            nn.Dropout(0.5) # Reverted to standard Dropout
         )
 
-        # 3. CBAM Attention Block (Replaces SEBlock)
-        self.cbam_block = CBAMBlock(channels=total_filters * self.D)
+        # 3. SEBlock (Replaces CBAM)
+        self.se_block = SEBlock(channels=total_filters * self.D)
         
         # 4. Final Projection
         self.projection = nn.Sequential(
             nn.Conv2d(total_filters * self.D, embed_size, (1, 1), bias=False),
-            nn.InstanceNorm2d(embed_size, affine=True), # Changed to InstanceNorm
+            nn.BatchNorm2d(embed_size), # Reverted to BatchNorm2d
             nn.ELU(),
             nn.AvgPool2d((1, 4)), 
-            nn.Dropout2d(0.5), # Changed to Spatial Dropout2d
+            nn.Dropout(0.5), # Reverted to standard Dropout
             Rearrange('b e (h) (w) -> b (h w) e'), 
         )
 
@@ -139,7 +160,7 @@ class ConvEmbedding(nn.Module):
         x = torch.cat(branches_out, dim=1) 
         
         x = self.spatial_conv(x)
-        x = self.cbam_block(x) # Apply CBAM
+        x = self.se_block(x) # Apply SEBlock
         
         out = self.projection(x)
         return out
@@ -253,22 +274,27 @@ class ClassificationHead(nn.Sequential):
     def __init__(self, embed_size, n_classes):
         super(ClassificationHead, self).__init__()
         
-        # The flattened size from the Transformer (62 sequence length * 40 embed_size)
-        flattened_size = 2480 
+        # Original SADNet global average pooling head (kept for compatibility)
+        self.clshead = nn.Sequential(
+            Reduce('b n e -> b e', reduction='mean'),
+            nn.LayerNorm(embed_size),
+            nn.Linear(embed_size, n_classes),
+        )
         
+        # NEW GENTLE FUNNEL BOTTLENECK
+        # 2480 -> LayerNorm -> 512 -> 64 -> 3
         self.fc = nn.Sequential(
-            nn.LayerNorm(flattened_size), # Added to normalize the massive flattened vector
-            nn.Linear(flattened_size, 128), # Tighter bottleneck (was 256)
+            nn.LayerNorm(2480),   # <--- Stabilizes the massive flattened vector from the Transformer
+            nn.Linear(2480, 512), # Gentler step down (was 256)
             nn.ELU(),
-            nn.Dropout(0.6), # Increased dropout to heavily punish memorization
-            nn.Linear(128, 32),
+            nn.Dropout(0.5),      # Standard dropout
+            nn.Linear(512, 64),   # Gentler step down (was 32)
             nn.ELU(),
-            nn.Dropout(0.4),
-            nn.Linear(32, n_classes)
+            nn.Dropout(0.3),
+            nn.Linear(64, n_classes)
         )
 
     def forward(self, x):
-        # Flattens the [Batch, Seq_len, Embed_Size] to [Batch, 2480]
         x = x.contiguous().view(x.shape[0], -1)
         out = self.fc(x)
         return out
