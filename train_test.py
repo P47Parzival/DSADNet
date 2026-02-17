@@ -151,7 +151,7 @@ def test_model(config, model, test_iter, use_zero=False):
 
 
 # reference MAG
-def train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name, mode="inter"):
+def train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name, mode="inter", resume=False):
     run = wandb.init(project="DSADNet", entity=None, config=config.__dict__, reinit=True)
     wandb.config.update(config.__dict__, allow_val_change=True)  # 记录config中设置的参数
     valid_losses = []
@@ -159,6 +159,7 @@ def train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name, mode
     test_aucs = []
     best_f1 = 0
     best_auc = 0
+    start_epoch = 0
     optimizer = torch.optim.Adam(model.parameters(), lr=config.learning_rate)
     # to get single model for certain subject
     import os
@@ -169,8 +170,24 @@ def train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name, mode
     
     current_f1_save_path = os.path.join(save_dir, f'f1_{subject_name}_{mode}.ckpt')
     current_auc_save_path = os.path.join(save_dir, f'auc_{subject_name}_{mode}.ckpt')
+    checkpoint_path = os.path.join(save_dir, f'checkpoint_{subject_name}_{mode}.pt')
     
-    for i in range(int(config.num_epoch)):
+    # --- Resume from checkpoint ---
+    if resume and os.path.exists(checkpoint_path):
+        print(f"[RESUME] Loading checkpoint for {subject_name} ({mode})...")
+        checkpoint = torch.load(checkpoint_path, map_location=config.device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        start_epoch = checkpoint['epoch'] + 1  # resume from the NEXT epoch
+        best_f1 = checkpoint['best_f1']
+        best_auc = checkpoint['best_auc']
+        valid_losses = checkpoint['valid_losses']
+        test_f1s = checkpoint['test_f1s']
+        test_aucs = checkpoint['test_aucs']
+        print(f"[RESUME] Resuming from epoch {start_epoch}/{config.num_epoch} "
+              f"(best_f1={best_f1:.4f}, best_auc={best_auc:.4f})")
+    
+    for i in range(start_epoch, int(config.num_epoch)):
         train_loss = train_epoch(config, model, train_iter, optimizer)
         valid_loss = eval_epoch(config, model, dev_iter)
         test_acc, test_mae, test_corr, test_f1, test_auc = test_model(config, model, test_iter)
@@ -188,6 +205,19 @@ def train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name, mode
         if test_auc > best_auc:
             best_auc = test_auc
             torch.save(model.state_dict(), current_auc_save_path)
+        
+        # --- Save checkpoint every epoch for crash recovery ---
+        torch.save({
+            'epoch': i,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'best_f1': best_f1,
+            'best_auc': best_auc,
+            'valid_losses': valid_losses,
+            'test_f1s': test_f1s,
+            'test_aucs': test_aucs,
+        }, checkpoint_path)
+        
         wandb.log(
             (
                 {
@@ -203,6 +233,12 @@ def train_MAG(config, model, train_iter, dev_iter, test_iter, subject_name, mode
                 }
             )
         )
+    
+    # Training complete for this subject - clean up checkpoint
+    if os.path.exists(checkpoint_path):
+        os.remove(checkpoint_path)
+        print(f"[CHECKPOINT] Removed completed checkpoint for {subject_name}")
+    
     wandb.log(({"avg_test_f1": sum(test_f1s) / len(test_f1s)}))
     wandb.log(({"avg_test_auc": sum(test_aucs) / len(test_aucs)}))
     run.finish()
